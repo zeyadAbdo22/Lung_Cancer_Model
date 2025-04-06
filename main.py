@@ -6,6 +6,7 @@ import numpy as np
 import uvicorn
 from PIL import Image
 import io
+import os 
 from fastapi.middleware.cors import CORSMiddleware
 
 # Load the trained CNN model
@@ -59,6 +60,7 @@ async def predict(file: UploadFile = File(...)):
         # Handle errors gracefully
         return JSONResponse(content={"error": str(e)}, status_code=500)
 
-# Run the server locally
+# Run the server (Railway-friendly)
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))  
+    uvicorn.run(app, host="0.0.0.0", port=port)
