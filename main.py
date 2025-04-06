@@ -9,8 +9,10 @@ import io
 import os
 from fastapi.middleware.cors import CORSMiddleware
 
-# Load the trained CNN model
-model = load_model(r"./model_cnn2.h5")  
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, "lung_cancer_model.h5")
+model = load_model(model_path)
 
 # Class names that the model predicts
 CLASS_NAMES = ["Adenocarcinoma", "Benign", "Squamous Cell Carcinoma"]
