@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-tensorflow
-pillow
 numpy
+Pillow
+tensorflow
 python-multipart
