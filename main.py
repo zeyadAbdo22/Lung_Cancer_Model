@@ -6,7 +6,7 @@ import numpy as np
 import uvicorn
 from PIL import Image
 import io
-import os 
+import os
 from fastapi.middleware.cors import CORSMiddleware
 
 # Load the trained CNN model
@@ -29,6 +29,11 @@ app.add_middleware(
 
 # Image size that the model expects
 IMG_SIZE = 224
+
+# ✅ Add a default root route for health check
+@app.get("/")
+def read_root():
+    return {"message": "✅ Lung Cancer Detection API is running!"}
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
