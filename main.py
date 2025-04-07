@@ -1,36 +1,17 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
-from PIL import Image
+from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
-import uvicorn
-import os
+from PIL import Image
 import io
-import gdown
+import os
+import requests
 
-# Set up paths
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(BASE_DIR, "lung_cancer_model.h5")
-
-# Download the model from Google Drive if it's not already present
-if not os.path.exists(model_path):
-    print("📥 Downloading model from Google Drive...")
-    url = "https://drive.google.com/uc?id=1l4WjZAdPL-6XqWwwSXXv8lvss5YigxaE"  # Direct download link
-    gdown.download(url, model_path, quiet=False)
-    print("✅ Model downloaded successfully.")
-
-# Load the model
-model = load_model(model_path)
-
-# Class names the model predicts
-CLASS_NAMES = ["Adenocarcinoma", "Benign", "Squamous Cell Carcinoma"]
-
-# Initialize the FastAPI app
 app = FastAPI()
 
-# Allow connections from any frontend (e.g. Streamlit, React)
+# CORS settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,32 +20,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Model expects image size 224x224
+CLASS_NAMES = ["Adenocarcinoma", "Benign", "Squamous Cell Carcinoma"]
 IMG_SIZE = 224
 
-# Health check route
+# Download the model if it doesn't exist
+MODEL_PATH = "lung_cancer_model.h5"
+MODEL_URL = "https://drive.google.com/uc?id=1l4WjZAdPL-6XqWwwSXXv8lvss5YigxaE"
+
+if not os.path.exists(MODEL_PATH):
+    print("🔽 Downloading model from Google Drive...")
+    response = requests.get(MODEL_URL)
+    with open(MODEL_PATH, "wb") as f:
+        f.write(response.content)
+    print("✅ Model downloaded successfully.")
+
+# Load model
+model = load_model(MODEL_PATH)
+
 @app.get("/")
-def read_root():
+def root():
     return {"message": "✅ Lung Cancer Detection API is running!"}
 
-# Prediction endpoint
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     try:
-        # Read and preprocess the uploaded image
         contents = await file.read()
         img = Image.open(io.BytesIO(contents)).convert("RGB")
         img = img.resize((IMG_SIZE, IMG_SIZE))
-        img_array = image.img_to_array(img) / 255.0  # Normalize
+
+        img_array = image.img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
 
-        # Make prediction
         prediction = model.predict(img_array)
         predicted_class = int(np.argmax(prediction))
         predicted_label = CLASS_NAMES[predicted_class]
         confidence = float(np.max(prediction))
 
-        # Return prediction
         return JSONResponse(content={
             "prediction_raw": prediction.tolist(),
             "predicted_label": predicted_label,
@@ -73,8 +64,3 @@ async def predict(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
-
-# Run the server (used when running locally, or by Railway)
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
