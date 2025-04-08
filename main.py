@@ -67,10 +67,14 @@ def load_lung_model():
 
 def load_brain_model():
     global brain_model
-    path = kagglehub.model_download("khalednabawi/tb-chest-prediction/keras/v1")
-    brain_model_path = os.path.join(path, "tb_resnet.h5")
-    brain_model = load_model(brain_model_path, compile=False)
-    print(" Brain Tumor model loaded.")
+    try:
+        path = kagglehub.model_download("khalednabawi/tb-chest-prediction/keras/v1")
+        brain_model_path = os.path.join(path, "tb_resnet.h5")
+        brain_model = load_model(brain_model_path, compile=False)
+        print("✅ Brain Tumor model loaded.")
+    except Exception as e:
+        print(f"❌ Failed to load brain model: {e}")
+
 
 @app.on_event("startup")
 async def load_models():
