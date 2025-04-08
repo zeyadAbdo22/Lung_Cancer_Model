@@ -72,7 +72,7 @@ def load_brain_model():
     print_memory_usage()
 
     path = kagglehub.model_download("khalednabawi/brain-tumor-cnn/keras/v1")
-    brain_model_path = os.path.join(path, "brain-tumor-resnet-model.h5")
+    brain_model_path = os.path.join(path, "cnn_brain_tumor_model.h5")
     brain_model = load_model(brain_model_path, compile=False)
 
     print("✅ Brain model loaded.")
