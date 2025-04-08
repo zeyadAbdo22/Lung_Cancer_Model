@@ -9,7 +9,7 @@ from PIL import Image
 import io
 import os
 import kagglehub
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 app = FastAPI()
 
 # CORS settings
@@ -57,38 +57,34 @@ def make_prediction(model, img_array, class_labels, binary=False):
     return label, confidence, prediction.tolist()
 
 # ---------- Model Loaders ----------
-import psutil
-import os
-from tensorflow.keras.models import load_model
-import kagglehub
 
-def print_memory_usage():
-    process = psutil.Process(os.getpid())
-    print(f"🔍 Memory Usage: {process.memory_info().rss / 1024 ** 2:.2f} MB")
+def load_lung_model():
+    global lung_model
+    path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
+    lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
+    lung_model = load_model(lung_model_path, compile=False) 
 
 def load_brain_model():
     global brain_model
-    print("🧠📦 Before loading brain model:")
-    print_memory_usage()
-
     path = kagglehub.model_download("khalednabawi/brain-tumor-cnn/keras/v1")
     brain_model_path = os.path.join(path, "cnn_brain_tumor_model.h5")
     brain_model = load_model(brain_model_path, compile=False)
-
-    print("✅ Brain model loaded.")
-    print("🧠📦 After loading brain model:")
-    print_memory_usage()
-
     
     
 @app.on_event("startup")
 async def load_models():
     try:
         load_brain_model()
-        print("✅ Brain tumor model loaded.")
+        print(" Brain tumor model loaded.")
     except Exception as e:
-        print(f"❌ Failed to load Brain tumor model: {e}")
-
+        print(f" Failed to load Brain tumor model: {e}")
+'''
+    try:
+        load_lung_model()
+        print("lung cancer model loaded.")
+    except Exception as e:
+        print(f" Failed to load lung cancer model: {e}")
+'''
 # ---------- Routes ----------
 
 @app.get("/")
