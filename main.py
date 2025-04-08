@@ -57,14 +57,6 @@ def make_prediction(model, img_array, class_labels, binary=False):
     return label, confidence, prediction.tolist()
 
 # ---------- Model Loaders ----------
-
-def load_lung_model():
-    global lung_model
-    path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
-    lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
-    lung_model = load_model(lung_model_path, compile=False)
-    print("Lung Cancer model loaded.")
-
 def load_brain_model():
     global brain_model
     try:
@@ -74,6 +66,15 @@ def load_brain_model():
         print("✅ Brain Tumor model loaded.")
     except Exception as e:
         print(f"❌ Failed to load brain model: {e}")
+        
+def load_lung_model():
+    global lung_model
+    path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
+    lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
+    lung_model = load_model(lung_model_path, compile=False)
+    print("Lung Cancer model loaded.")
+
+
 
 
 @app.on_event("startup")
