@@ -27,14 +27,13 @@ CLASS_NAMES = ["Adenocarcinoma", "Benign", "Squamous Cell Carcinoma"]
 IMG_SIZE = 224
 
 
-
 model = None  # Global model variable
 
 def load_model_from_kaggle():
     """Load model from Kaggle Hub"""
     global model
     path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
-    model_path = os.path.join(path, "lc_resnet.h5")
+    model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
 
     if not os.path.exists(model_path):
         raise FileNotFoundError("Model file not found.")
