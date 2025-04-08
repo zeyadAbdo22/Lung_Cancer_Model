@@ -62,10 +62,12 @@ async def predict(file: UploadFile = File(...)):
         img = Image.open(io.BytesIO(contents)).convert("RGB")
         img = img.resize((IMG_SIZE, IMG_SIZE))
 
-        img_array = image.img_to_array(img) / 255.0
+        # Convert the image to array and preprocess for ResNet
+        img_array = image.img_to_array(img)
         img_array = np.expand_dims(img_array, axis=0)
-        img_array = preprocess_input(img_array)
+        img_array = preprocess_input(img_array)  # <-- Important for ResNet
 
+        # Make prediction
         prediction = model.predict(img_array)
         predicted_class = int(np.argmax(prediction))
         predicted_label = CLASS_NAMES[predicted_class]
@@ -79,3 +81,5 @@ async def predict(file: UploadFile = File(...)):
 
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
+    
+
