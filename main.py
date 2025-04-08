@@ -57,34 +57,35 @@ def make_prediction(model, img_array, class_labels, binary=False):
     return label, confidence, prediction.tolist()
 
 # ---------- Model Loaders ----------
-def load_brain_model():
-    global brain_model
-    try:
-        path = kagglehub.model_download("khalednabawi/tb-chest-prediction/keras/v1")
-        brain_model_path = os.path.join(path, "tb_resnet.h5")
-        brain_model = load_model(brain_model_path, compile=False)
-        print("✅ Brain Tumor model loaded.")
-    except Exception as e:
-        print(f"❌ Failed to load brain model: {e}")
-        
+
 def load_lung_model():
     global lung_model
     path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
     lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
     lung_model = load_model(lung_model_path, compile=False)
-    print("Lung Cancer model loaded.")
+    
 
-
-
-
+def load_brain_model():
+    global brain_model
+    path = kagglehub.model_download("khalednabawi/tb-chest-prediction/keras/v1")
+    brain_model_path = os.path.join(path, "tb_resnet.h5")
+    brain_model = load_model(brain_model_path, compile=False)
+    
+    
 @app.on_event("startup")
 async def load_models():
     try:
         load_lung_model()
-        load_brain_model()
+        print("✅ Lung cancer model loaded.")
     except Exception as e:
-        print(f" Error loading models: {e}")
-        raise
+        print(f"❌ Failed to load Lung cancer model: {e}")
+
+    try:
+        load_brain_model()
+        print("✅ Brain tumor model loaded.")
+    except Exception as e:
+        print(f"❌ Failed to load Brain tumor model: {e}")
+
 
 # ---------- Routes ----------
 
