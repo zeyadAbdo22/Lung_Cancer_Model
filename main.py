@@ -57,7 +57,6 @@ def make_prediction(model, img_array, class_labels, binary=False):
     return label, confidence, prediction.tolist()
 
 # ---------- Model Loaders ----------
-
 import psutil
 import os
 from tensorflow.keras.models import load_model
@@ -72,13 +71,14 @@ def load_brain_model():
     print("🧠📦 Before loading brain model:")
     print_memory_usage()
 
-    path = kagglehub.model_download("zeyadabdo/brain-tumor-resnet/keras/v1")
+    path = kagglehub.model_download("khalednabawi/brain-tumor-cnn/keras/v1")
     brain_model_path = os.path.join(path, "brain-tumor-resnet-model.h5")
     brain_model = load_model(brain_model_path, compile=False)
 
     print("✅ Brain model loaded.")
     print("🧠📦 After loading brain model:")
     print_memory_usage()
+
     
     
 @app.on_event("startup")
