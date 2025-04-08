@@ -57,17 +57,17 @@ def make_prediction(model, img_array, class_labels, binary=False):
     return label, confidence, prediction.tolist()
 
 # ---------- Model Loaders ----------
-'''
+
 def load_lung_model():
     global lung_model
     path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
     lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
     lung_model = load_model(lung_model_path, compile=False) 
-'''
+
 def load_brain_model():
     global brain_model
-    path = kagglehub.model_download("khalednabawi/tb-chest-prediction/keras/v1")
-    brain_model_path = os.path.join(path, "tb_resnet.h5")
+    path = kagglehub.model_download("khalednabawi/brain-tumor-cnn/keras/v1")
+    brain_model_path = os.path.join(path, "cnn_brain_tumor_model.h5")
     brain_model = load_model(brain_model_path, compile=False)
     
     
@@ -78,6 +78,11 @@ async def load_models():
         print("✅ Brain tumor model loaded.")
     except Exception as e:
         print(f"❌ Failed to load Brain tumor model: {e}")
+    try:
+        load_lung_model()
+        print("✅ lung cancer model loaded.")
+    except Exception as e:
+        print(f"❌ Failed to load lung cancer model: {e}")
 
 
 # ---------- Routes ----------
