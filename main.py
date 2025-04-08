@@ -2,13 +2,15 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import JSONResponse
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.resnet50 import preprocess_input
 from fastapi.middleware.cors import CORSMiddleware
 import numpy as np
 from PIL import Image
 import io
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import requests
+import kagglehub
+
 
 app = FastAPI()
 
@@ -24,25 +26,37 @@ app.add_middleware(
 CLASS_NAMES = ["Adenocarcinoma", "Benign", "Squamous Cell Carcinoma"]
 IMG_SIZE = 224
 
-# Download the model if it doesn't exist
-MODEL_PATH = "lung_cancer_model.h5"
-MODEL_URL = "https://drive.google.com/uc?id=1l4WjZAdPL-6XqWwwSXXv8lvss5YigxaE"
 
-if not os.path.exists(MODEL_PATH):
-    print("🔽 Downloading model from Google Drive...")
-    response = requests.get(MODEL_URL)
-    with open(MODEL_PATH, "wb") as f:
-        f.write(response.content)
-    print("✅ Model downloaded successfully.")
 
-# Load model
-model = load_model(MODEL_PATH)
+model = None  # Global model variable
+
+def load_model_from_kaggle():
+    """Load model from Kaggle Hub"""
+    global model
+    path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
+    model_path = os.path.join(path, "lc_resnet.h5")
+
+    if not os.path.exists(model_path):
+        raise FileNotFoundError("Model file not found.")
+
+    model = load_model(model_path, compile=False)
+    print("✅ Model loaded from Kaggle.")
+    return model
+
+@app.on_event("startup")
+async def startup_event():
+    """Load model at startup"""
+    try:
+        load_model_from_kaggle()
+    except Exception as e:
+        print(f"❌ Failed to load model: {e}")
+        raise
 
 @app.get("/")
 def root():
     return {"message": "✅ Lung Cancer Detection API is running!"}
 
-@app.post("/predict")
+@app.post("/lung-cancer")
 async def predict(file: UploadFile = File(...)):
     try:
         contents = await file.read()
@@ -51,6 +65,7 @@ async def predict(file: UploadFile = File(...)):
 
         img_array = image.img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0)
+        img_array = preprocess_input(img_array)
 
         prediction = model.predict(img_array)
         predicted_class = int(np.argmax(prediction))

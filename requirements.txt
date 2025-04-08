@@ -5,3 +5,4 @@ Pillow
 tensorflow
 gdown
 python-multipart
+kagglehub
