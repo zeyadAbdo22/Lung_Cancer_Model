@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile 
 from fastapi.responses import JSONResponse
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
@@ -8,9 +8,7 @@ import numpy as np
 from PIL import Image
 import io
 import os
-import requests
 import kagglehub
-
 
 app = FastAPI()
 
@@ -23,63 +21,98 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CLASS_NAMES = ["Adenocarcinoma", "Benign", "Squamous Cell Carcinoma"]
+# Constants
 IMG_SIZE = 224
+LUNG_CLASSES = ["Adenocarcinoma", "Benign", "Squamous Cell Carcinoma"]
+BRAIN_CLASSES = {0: "Normal", 1: "Tuberculosis"}  
 
+# Model containers
+lung_model = None
+brain_model = None
 
-model = None  # Global model variable
+# ---------- Utility Functions ----------
 
-def load_model_from_kaggle():
-    """Load model from Kaggle Hub"""
-    global model
+def preprocess_image(img: Image.Image):
+    img = img.resize((IMG_SIZE, IMG_SIZE))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    return preprocess_input(img_array)
+
+def load_and_prepare_image(file: UploadFile):
+    """Reads image file and returns preprocessed image array."""
+    contents = file.file.read()
+    img = Image.open(io.BytesIO(contents)).convert("RGB")
+    return preprocess_image(img)
+
+def make_prediction(model, img_array, class_labels, binary=False):
+    prediction = model.predict(img_array)
+    if binary:
+        predicted_class = int(prediction[0][0] > 0.5)
+        confidence = float(prediction[0][0])
+    else:
+        predicted_class = int(np.argmax(prediction))
+        confidence = float(np.max(prediction))
+
+    label = class_labels[predicted_class]
+    return label, confidence, prediction.tolist()
+
+# ---------- Model Loaders ----------
+
+def load_lung_model():
+    global lung_model
     path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
-    model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
+    lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
+    lung_model = load_model(lung_model_path, compile=False)
+    print("Lung Cancer model loaded.")
 
-    if not os.path.exists(model_path):
-        raise FileNotFoundError("Model file not found.")
-
-    model = load_model(model_path, compile=False)
-    print("✅ Model loaded from Kaggle.")
-    return model
+def load_brain_model():
+    global brain_model
+    path = kagglehub.model_download("khalednabawi/tb-chest-prediction/keras/v1")
+    brain_model_path = os.path.join(path, "tb_resnet.h5")
+    brain_model = load_model(brain_model_path, compile=False)
+    print(" Brain Tumor model loaded.")
 
 @app.on_event("startup")
-async def startup_event():
-    """Load model at startup"""
+async def load_models():
     try:
-        load_model_from_kaggle()
+        load_lung_model()
+        load_brain_model()
     except Exception as e:
-        print(f"❌ Failed to load model: {e}")
+        print(f" Error loading models: {e}")
         raise
+
+# ---------- Routes ----------
 
 @app.get("/")
 def root():
-    return {"message": "✅ Lung Cancer Detection API is running!"}
+    return {"message": " Multi-Disease Detection API is running!"}
 
 @app.post("/lung-cancer")
-async def predict(file: UploadFile = File(...)):
+async def predict_lung(file: UploadFile = File(...)):
     try:
-        contents = await file.read()
-        img = Image.open(io.BytesIO(contents)).convert("RGB")
-        img = img.resize((IMG_SIZE, IMG_SIZE))
+        img_array = load_and_prepare_image(file)
+        label, confidence, raw = make_prediction(lung_model, img_array, LUNG_CLASSES)
 
-        # Convert the image to array and preprocess for ResNet
-        img_array = image.img_to_array(img)
-        img_array = np.expand_dims(img_array, axis=0)
-        img_array = preprocess_input(img_array)  # <-- Important for ResNet
-
-        # Make prediction
-        prediction = model.predict(img_array)
-        predicted_class = int(np.argmax(prediction))
-        predicted_label = CLASS_NAMES[predicted_class]
-        confidence = float(np.max(prediction))
-
-        return JSONResponse(content={
-            "prediction_raw": prediction.tolist(),
-            "predicted_label": predicted_label,
-            "confidence": round(confidence, 4)
-        })
-
+        return {
+            "success": True,
+            "prediction": label,
+            "confidence": round(confidence, 4),
+            "raw": raw
+        }
     except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)
-    
+        return {"success": False, "error": str(e)}
 
+@app.post("/brain-tumor")
+async def predict_brain(file: UploadFile = File(...)):
+    try:
+        img_array = load_and_prepare_image(file)
+        label, confidence, raw = make_prediction(brain_model, img_array, BRAIN_CLASSES, binary=True)
+
+        return {
+            "success": True,
+            "prediction": label,
+            "confidence": round(confidence, 4),
+            "raw": raw
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
