@@ -3,6 +3,7 @@ uvicorn
 numpy
 Pillow
 tensorflow
+psutil
 gdown
 python-multipart
 kagglehub
