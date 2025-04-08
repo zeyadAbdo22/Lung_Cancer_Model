@@ -9,7 +9,7 @@ from PIL import Image
 import io
 import os
 import kagglehub
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 app = FastAPI()
 
 # CORS settings
@@ -57,14 +57,13 @@ def make_prediction(model, img_array, class_labels, binary=False):
     return label, confidence, prediction.tolist()
 
 # ---------- Model Loaders ----------
-
+'''
 def load_lung_model():
     global lung_model
     path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
     lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
-    lung_model = load_model(lung_model_path, compile=False)
-    
-
+    lung_model = load_model(lung_model_path, compile=False) 
+'''
 def load_brain_model():
     global brain_model
     path = kagglehub.model_download("khalednabawi/tb-chest-prediction/keras/v1")
@@ -74,12 +73,6 @@ def load_brain_model():
     
 @app.on_event("startup")
 async def load_models():
-    try:
-        load_lung_model()
-        print("✅ Lung cancer model loaded.")
-    except Exception as e:
-        print(f"❌ Failed to load Lung cancer model: {e}")
-
     try:
         load_brain_model()
         print("✅ Brain tumor model loaded.")
