@@ -59,16 +59,9 @@ def make_prediction(model, img_array, class_labels, binary=False):
 
 def load_lung_model():
     global lung_model
-    path = kagglehub.model_download("zeyadabdo/lung-cancer-resnet/keras/v1")
+    path = kagglehub.model_download("zeyadabdo/lung-cancer-models/keras/resnet-v1")
     lung_model_path = os.path.join(path, "lung-cancer-resnet-model.h5")
-    lung_model = load_model(lung_model_path, compile=False) 
-'''
-def load_brain_model():
-    global brain_model
-    path = kagglehub.model_download("khalednabawi/brain-tumor-cnn/keras/v1")
-    brain_model_path = os.path.join(path, "cnn_brain_tumor_model.h5")
-    brain_model = load_model(brain_model_path, compile=False)
-'''    
+    lung_model = load_model(lung_model_path, compile=False)    
     
 @app.on_event("startup")
 async def load_models():
@@ -77,13 +70,7 @@ async def load_models():
         print("lung cancer model loaded.")
     except Exception as e:
         print(f" Failed to load lung cancer model: {e}")
-'''  
-    try:
-        load_brain_model()
-        print(" Brain tumor model loaded.")
-    except Exception as e:
-        print(f" Failed to load Brain tumor model: {e}")
-'''
+
 # ---------- Routes ----------
 
 @app.get("/")
@@ -105,17 +92,3 @@ async def predict_lung(file: UploadFile = File(...)):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-@app.post("/brain-tumor")
-async def predict_brain(file: UploadFile = File(...)):
-    try:
-        img_array = load_and_prepare_image(file)
-        label, confidence, raw = make_prediction(brain_model, img_array, BRAIN_CLASSES, binary=True)
-
-        return {
-            "success": True,
-            "prediction": label,
-            "confidence": round(confidence, 4),
-            "raw": raw
-        }
-    except Exception as e:
-        return {"success": False, "error": str(e)}
